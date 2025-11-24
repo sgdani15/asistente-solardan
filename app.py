@@ -43,7 +43,7 @@ No des respuestas sobre temas que no sean energía solar o electricidad.
 
 # Configuración del modelo
 model = genai.GenerativeModel(
-    'gemini-1.5-flash',
+    'gemini-pro',
     system_instruction=instrucciones_sistema
 )
 
