@@ -9,27 +9,23 @@ st.set_page_config(
 )
 
 # --- CONFIGURACIÓN DE SOLARDAN ---
-# Aquí definimos el enlace a tu calendario para cuando la IA no pueda resolverlo
-ENLACE_CALENDARIO = "https://calendly.com/PON-AQUI-TU-ENLACE" 
+# Aquí definimos el enlace a tu calendario correctamente
+ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
 
 # Título y subtítulo visible
-st.title("☀️ Asistente Técnico SolarDan ☀️")
+st.title("☀️ Asistente Técnico SolarDan")
 st.caption("Tu experto en energía solar. Diagnóstico preliminar y citas.")
 
 # --- GESTIÓN DE LA CLAVE DE API (SECRETA) ---
-# Intentamos obtener la clave desde los "secretos" de Streamlit
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except:
-    # Esto es solo para que no de error visual si aún no está configurado,
-    # pero el usuario final nunca verá esto si lo configuramos bien.
     st.error("⚠️ Falta configurar la API Key en Streamlit Cloud.")
     st.stop()
 
 genai.configure(api_key=api_key)
 
 # --- DEFINICIÓN DE LA PERSONALIDAD (PROMPT DEL SISTEMA) ---
-# Aquí es donde le decimos a la IA quién es y cómo debe actuar.
 instrucciones_sistema = f"""
 Eres el asistente técnico virtual de la empresa "SolarDan", experta en instalaciones fotovoltaicas.
 Tu objetivo es ayudar a clientes con dudas técnicas sobre sus placas solares e inversores.
@@ -40,23 +36,22 @@ REGLAS DE COMPORTAMIENTO:
 3. Diagnóstico: Intenta resolver dudas comunes (configuración de app, lecturas del inversor, limpieza de paneles).
 4. LIMITACIÓN: Si la avería parece compleja, requiere herramientas, o no estás 100% seguro de la solución, NO inventes.
 5. ACCIÓN COMERCIAL: En caso de dudas complejas o averías físicas, diles amablemente: 
-   "Para este tipo de incidencia, es mejor que uno de nuestros técnicos de SolarDan lo revise presencialmente para asegurar tu instalación. Puedes reservar una cita directamente aquí: {https://calendly.com/solardangrancanaria}"
+   "Para este tipo de incidencia, es mejor que uno de nuestros técnicos de SolarDan lo revise presencialmente para asegurar tu instalación. Puedes reservar una cita directamente aquí: {ENLACE_CALENDARIO}"
 
 No des respuestas sobre temas que no sean energía solar o electricidad.
 """
 
-# Configuración del modelo (usamos flash por ser rápido y eficiente)
+# Configuración del modelo
 model = genai.GenerativeModel(
     'gemini-1.5-flash',
     system_instruction=instrucciones_sistema
 )
 
 # --- HISTORIAL DEL CHAT ---
-# Esto permite que el bot recuerde lo que se ha dicho en la conversación actual
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Mostrar mensajes anteriores en la pantalla
+# Mostrar mensajes anteriores
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -70,10 +65,9 @@ if prompt := st.chat_input("Describe tu problema o consulta sobre tus placas..."
 
     # 2. Generar respuesta
     try:
-        # Preparamos el historial para enviarlo a Gemini
         chat = model.start_chat(history=[
             {"role": m["role"], "parts": [m["content"]]} 
-            for m in st.session_state.messages[:-1] # Todo menos el último que acabamos de añadir
+            for m in st.session_state.messages[:-1]
         ])
         
         response = chat.send_message(prompt)
