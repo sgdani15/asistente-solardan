@@ -26,10 +26,6 @@ st.markdown("<p style='text-align: center;'>Tu experto en energía solar. Diagn�
 # --- CONFIGURACIÓN DE SOLARDAN ---
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
 
-# Título y subtítulo
-st.title("☀️ Asistente Técnico SolarDan ☀️")
-st.caption("Tu experto en energía solar. Diagnóstico preliminar y citas.")
-
 # --- GESTIÓN DE LA CLAVE DE API ---
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
