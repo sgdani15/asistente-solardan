@@ -49,11 +49,12 @@ with st.sidebar:
     # st.markdown("📞 928 XX XX XX") # Descomenta y pon tu número si quieres
     
     st.markdown("---")
-    
-    # BOTÓN PARA REINICIAR EL CHAT
     if st.button("🗑️ Borrar conversación"):
         st.session_state.messages = []
         st.rerun()
+    
+    st.markdown("---")
+    st.caption("© 2025 SolarDan. Todos los derechos reservados.")
         
 # ==========================================
 # 🟢 ÁREA PRINCIPAL (CHAT)
