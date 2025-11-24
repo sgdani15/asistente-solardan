@@ -94,7 +94,7 @@ if "messages" not in st.session_state:
 
 # Mensaje de bienvenida automático (opcional, si te gusta que salude primero)
 if len(st.session_state.messages) == 0:
-    intro = "¡Hola! Soy la IA de SolarDan. ¿Tienes algún problema con tu instalación o el inversor?"
+    intro = "¡Hola! Soy la IA de SolarDan. ¿En qué puedo ayudarte hoy con tu instalación?"
     st.session_state.messages.append({"role": "model", "content": intro})
 
 # Mostrar historial en pantalla
