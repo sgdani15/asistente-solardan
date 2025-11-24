@@ -4,16 +4,24 @@ import google.generativeai as genai
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="Asistente Técnico SolarDan",
-    page_icon="logo.png",
+    page_icon="☀️",
     layout="centered"
 )
 
-# 👇 AÑADE ESTO JUSTO AQUÍ DEBAJO 👇
-try:
-    st.image("logo.png", width=300) # Ajusta el número 300 para hacerlo más grande o pequeño
-except:
-    pass # Si no encuentra el logo, no hace nada y no da error
-# 👆 FIN DEL AÑADIDO 👆
+# --- DISEÑO DEL ENCABEZADO (LOGO Y TÍTULO CENTRADOS) ---
+# Creamos 3 columnas: izquierda (vacía), centro (logo), derecha (vacía)
+col1, col2, col3 = st.columns([1, 2, 1]) 
+
+with col2: # Trabajamos solo en la columna central
+    try:
+        # Muestra la imagen ajustada al ancho de la columna central
+        st.image("logo.png", use_container_width=True) 
+    except:
+        pass # Si falla la imagen no rompe la web
+
+# Usamos HTML para forzar que el texto quede perfectamente centrado debajo
+st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Tu experto en energía solar. Diagnóstico preliminar y citas.</p>", unsafe_allow_html=True)
 
 # --- CONFIGURACIÓN DE SOLARDAN ---
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
