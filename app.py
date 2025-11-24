@@ -10,7 +10,7 @@ st.set_page_config(
 
 # --- DISEÑO DEL ENCABEZADO (LOGO Y TÍTULO CENTRADOS) ---
 # Creamos 3 columnas: izquierda (vacía), centro (logo), derecha (vacía)
-col1, col2, col3 = st.columns([1, 2, 1]) 
+col1, col2, col3 = st.columns([1, 1, 1]) 
 
 with col2: # Trabajamos solo en la columna central
     try:
