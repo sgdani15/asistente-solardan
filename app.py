@@ -8,9 +8,15 @@ st.set_page_config(
     layout="centered"
 )
 
+# 👇 AÑADE ESTO JUSTO AQUÍ DEBAJO 👇
+try:
+    st.image("logo.png", width=300) # Ajusta el número 300 para hacerlo más grande o pequeño
+except:
+    pass # Si no encuentra el logo, no hace nada y no da error
+# 👆 FIN DEL AÑADIDO 👆
+
 # --- CONFIGURACIÓN DE SOLARDAN ---
-# Tu enlace de calendario confirmado
-ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
+ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
 
 # Título y subtítulo
 st.title("☀️ Asistente Técnico SolarDan")
