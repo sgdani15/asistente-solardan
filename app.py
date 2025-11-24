@@ -54,7 +54,9 @@ with st.sidebar:
     if st.button("🗑️ Borrar conversación"):
         st.session_state.messages = []
         st.rerun()
-
+        
+st.markdown("---")
+    st.caption("© 2025 SolarDan. Todos los derechos reservados.")
 # ==========================================
 # 🟢 ÁREA PRINCIPAL (CHAT)
 # ==========================================
