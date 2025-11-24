@@ -19,6 +19,8 @@ st.markdown("""
 
 # --- TUS DATOS ---
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
+# DEFINIMOS EL MENSAJE AQUÍ ARRIBA PARA QUE NO DE ERROR LUEGO
+MENSAJE_BIENVENIDA = "¡Hola! Soy la IA de SolarDan. ¿En qué puedo ayudarte hoy con tu instalación?"
 
 # --- CONEXIÓN CON GOOGLE GEMINI ---
 try:
@@ -93,10 +95,10 @@ except:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Mensaje de bienvenida automático (opcional, si te gusta que salude primero)
+# Mensaje de bienvenida automático
 if len(st.session_state.messages) == 0:
-    intro = "¡Hola! Soy la IA de SolarDan. ¿En qué puedo ayudarte hoy con tu instalación?"
-    st.session_state.messages.append({"role": "model", "content": intro})
+    # Usamos la constante definida arriba para evitar errores de memoria
+    st.session_state.messages.append({"role": "model", "content": MENSAJE_BIENVENIDA})
 
 # Mostrar historial en pantalla
 for message in st.session_state.messages:
@@ -112,7 +114,14 @@ if prompt := st.chat_input("Escribe aquí tu consulta..."):
 
     # 2. Generar respuesta IA
     try:
-        chat = model.start_chat(history=[{"role": m["role"], "parts": [m["content"]]} for m in st.session_state.messages if m["role"] != "model" or m["content"] != intro])
+        # Preparamos el historial FILTRANDO el mensaje de bienvenida usando la constante
+        historial_para_ia = [
+            {"role": m["role"], "parts": [m["content"]]} 
+            for m in st.session_state.messages[:-1] 
+            if m["content"] != MENSAJE_BIENVENIDA
+        ]
+        
+        chat = model.start_chat(history=historial_para_ia)
         
         response = chat.send_message(prompt)
         text_response = response.text
@@ -123,6 +132,8 @@ if prompt := st.chat_input("Escribe aquí tu consulta..."):
         st.session_state.messages.append({"role": "model", "content": text_response})
 
     except Exception as e:
+        # Imprime el error exacto en consola si lo necesitas, pero muestra mensaje amable al usuario
+        # print(e) 
         st.error("Lo siento, estoy teniendo problemas de conexión. Por favor, usa el botón del menú lateral para contactar con un técnico.")
 
 # --- PIE DE PÁGINA (DISCLAIMER) ---
