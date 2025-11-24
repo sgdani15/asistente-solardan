@@ -4,7 +4,7 @@ import google.generativeai as genai
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="Asistente Técnico SolarDan",
-    page_icon="☀️",
+    page_icon="logo.png",
     layout="centered"
 )
 
@@ -19,7 +19,7 @@ except:
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
 
 # Título y subtítulo
-st.title("☀️ Asistente Técnico SolarDan")
+st.title("☀️ Asistente Técnico SolarDan ☀️")
 st.caption("Tu experto en energía solar. Diagnóstico preliminar y citas.")
 
 # --- GESTIÓN DE LA CLAVE DE API ---
