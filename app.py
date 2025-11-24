@@ -126,4 +126,4 @@ if prompt := st.chat_input("Escribe aquí tu consulta..."):
 
 # --- PIE DE PÁGINA (DISCLAIMER) ---
 st.markdown("---")
-st.caption("⚠️ **Aviso:** Asistente basado en IA. Para averías críticas, usa el botón 'Reservar Cita' del menú lateral.")
+st.caption("⚠️ **Aviso:** Este es un asistente basado en Inteligencia Artificial. Aunque está entrenado para ayudar, puede cometer errores. Para averías críticas, consulta siempre con nuestro equipo humano.")
