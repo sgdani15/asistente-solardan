@@ -6,6 +6,16 @@ st.set_page_config(
     page_title="Asistente Técnico SolarDan",
     page_icon="☀️",
     layout="centered"
+
+    # 👇 AÑADE ESTO JUSTO AQUÍ DEBAJO 👇
+try:
+    st.image("logo.png", width=300) # Ajusta el número 300 para hacerlo más grande o pequeño
+except:
+    pass # Si no encuentra el logo, no hace nada y no da error
+# 👆 FIN DEL AÑADIDO 👆
+
+# --- CONFIGURACIÓN DE SOLARDAN ---
+ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
 )
 
 # --- CONFIGURACIÓN DE SOLARDAN ---
