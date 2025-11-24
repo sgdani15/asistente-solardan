@@ -4,96 +4,106 @@ import google.generativeai as genai
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="Asistente Técnico SolarDan",
-    page_icon="☀️",
-    layout="centered"
+    page_icon="logo.png",
+    layout="centered",
+    initial_sidebar_state="expanded" # Abre la barra lateral por defecto
 )
 
-# --- DISEÑO DEL ENCABEZADO (LOGO Y TÍTULO CENTRADOS) ---
-# Creamos 3 columnas: izquierda (vacía), centro (logo), derecha (vacía)
-col1, col2, col3 = st.columns([1, 2, 1]) 
+# --- ESTILOS CSS PERSONALIZADOS (Opcional pero recomendado) ---
+# Esto oculta el menú de hamburguesa de arriba a la derecha y el pie de página de "Made with Streamlit"
+st.markdown("""
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
 
-with col2: # Trabajamos solo en la columna central
+# --- CONFIGURACIÓN ---
+ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
+try:
+    api_key = st.secrets["GOOGLE_API_KEY"]
+    genai.configure(api_key=api_key)
+except:
+    st.error("⚠️ Falta configurar la API Key.")
+    st.stop()
+
+# --- BARRA LATERAL (SIDEBAR) ---
+with st.sidebar:
+    # Si quieres poner el logo también en pequeño aquí, descomenta la siguiente línea:
+    # st.image("logo.png", width=100) 
+    st.header("Sobre SolarDan")
+    st.markdown("Somos expertos en energía fotovoltaica en Gran Canaria.")
+    
+    st.markdown("---")
+    st.markdown("### 📞 Contacto")
+    st.markdown("¿Prefieres hablar con un humano?")
+    # Puedes poner tu teléfono real aquí abajo
+    st.markdown("📧 info@solardan.com") 
+    
+    st.markdown("---")
+    if st.button("🗑️ Borrar conversación"):
+        st.session_state.messages = []
+        st.rerun()
+    
+    st.markdown("---")
+    st.caption("© 2025 SolarDan. Todos los derechos reservados.")
+
+# --- DISEÑO CENTRAL (TU LOGO) ---
+col1, col2, col3 = st.columns([1, 2, 1]) 
+with col2:
     try:
-        # Muestra la imagen ajustada al ancho de la columna central
         st.image("logo.png", use_container_width=True) 
     except:
-        pass # Si falla la imagen no rompe la web
+        pass 
 
-# Usamos HTML para forzar que el texto quede perfectamente centrado debajo
 st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Tu experto en energía solar. Diagnóstico preliminar y citas.</p>", unsafe_allow_html=True)
 
-# --- CONFIGURACIÓN DE SOLARDAN ---
-ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria"
-
-# --- GESTIÓN DE LA CLAVE DE API ---
-try:
-    api_key = st.secrets["GOOGLE_API_KEY"]
-except:
-    st.error("⚠️ Falta configurar la API Key en Streamlit Cloud.")
-    st.stop()
-
-genai.configure(api_key=api_key)
-
-# --- DEFINICIÓN DE LA PERSONALIDAD ---
+# --- IA Y LÓGICA ---
 instrucciones_sistema = f"""
-Eres el asistente técnico virtual de la empresa "SolarDan", experta en instalaciones fotovoltaicas.
-Tu objetivo es ayudar a clientes con dudas técnicas sobre sus placas solares e inversores.
+Eres el asistente técnico virtual de la empresa "SolarDan".
+Objetivo: Ayudar a clientes con dudas técnicas de placas solares.
 
-REGLAS DE COMPORTAMIENTO:
-1. Tono: Profesional, técnico pero accesible, y amable.
-2. Seguridad ante todo: Si el usuario describe algo peligroso (humo, chispas, cables pelados, olor a quemado), indícale que apague el sistema inmediatamente y que contacte con un técnico urgente.
-3. Diagnóstico: Intenta resolver dudas comunes (configuración de app, lecturas del inversor, limpieza de paneles).
-4. LIMITACIÓN: Si la avería parece compleja, requiere herramientas, o no estás 100% seguro de la solución, NO inventes.
-5. ACCIÓN COMERCIAL: En caso de dudas complejas o averías físicas, diles amablemente: 
-   "Para este tipo de incidencia, es mejor que uno de nuestros técnicos de SolarDan lo revise presencialmente para asegurar tu instalación. Puedes reservar una cita directamente aquí: {ENLACE_CALENDARIO}"
-
-No des respuestas sobre temas que no sean energía solar o electricidad.
+REGLAS:
+1. Tono: Profesional y amable.
+2. SEGURIDAD: Si hay riesgo (humo, chispas), manda APAGAR todo y contactar técnico.
+3. LIMITACIÓN: Si no sabes la solución o es avería física, deriva al calendario: {ENLACE_CALENDARIO}
+4. No respondas de temas ajenos a la energía solar.
 """
 
-# --- CONFIGURACIÓN DEL MODELO ---
-# Usamos el modelo que hemos confirmado que existe en tu lista
 try:
-    model = genai.GenerativeModel(
-        'gemini-2.5-flash', 
-        system_instruction=instrucciones_sistema
-    )
-except Exception as e:
-    st.error(f"Error al configurar el modelo: {e}")
+    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=instrucciones_sistema)
+except:
+    st.error("Error cargando modelo IA.")
 
-# --- HISTORIAL DEL CHAT ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Mostrar mensajes anteriores
+# Mensaje de bienvenida si el chat está vacío
+if len(st.session_state.messages) == 0:
+    with st.chat_message("assistant"):
+        st.markdown("¡Hola! Soy la IA de SolarDan. ¿En qué puedo ayudarte hoy con tu instalación?")
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- INTERACCIÓN CON EL USUARIO ---
-if prompt := st.chat_input("Describe tu problema o consulta sobre tus placas..."):
-    # 1. Mostrar mensaje del usuario
+if prompt := st.chat_input("Escribe tu duda aquí..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Generar respuesta
     try:
-        # Preparamos el historial
-        chat = model.start_chat(history=[
-            {"role": m["role"], "parts": [m["content"]]} 
-            for m in st.session_state.messages[:-1]
-        ])
-        
+        chat = model.start_chat(history=[{"role": m["role"], "parts": [m["content"]]} for m in st.session_state.messages[:-1]])
         response = chat.send_message(prompt)
-        text_response = response.text
-
-        # 3. Mostrar respuesta
-        with st.chat_message("assistant"):
-            st.markdown(text_response)
         
-        # 4. Guardar respuesta
-        st.session_state.messages.append({"role": "model", "content": text_response})
+        with st.chat_message("assistant"):
+            st.markdown(response.text)
+        st.session_state.messages.append({"role": "model", "content": response.text})
 
     except Exception as e:
-        st.error(f"Lo siento, ha habido un error de conexión. Inténtalo de nuevo. Error: {e}")
+        st.error("Error de conexión temporal.")
+
+# --- DISCLAIMER FINAL (Aviso Legal) ---
+st.markdown("---")
+st.caption("⚠️ **Nota:** Este es un asistente basado en Inteligencia Artificial. Aunque está entrenado para ayudar, puede cometer errores. Para averías críticas, consulta siempre con nuestro equipo humano.")
