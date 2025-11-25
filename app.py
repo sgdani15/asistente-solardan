@@ -89,7 +89,7 @@ REGLAS:
 
 # Configuración del modelo
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=instrucciones_sistema)
+    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=instrucciones_sistema)
 except:
     st.error("Error cargando el modelo de IA.")
 
