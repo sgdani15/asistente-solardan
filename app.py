@@ -80,7 +80,7 @@ with st.sidebar:
     st.header("SolarDan Herramientas")
     
     # --- SECCIÓN 1: GENERADOR PDF ---
-    with st.expander("📝 SOLICITAR INFORME PDF", expanded=False): # Lo pongo cerrado por defecto para no tapar el contacto
+    with st.expander("📝 SOLICITAR INFORME PDF", expanded=False):
         st.write("Rellena para obtener estudio instantáneo.")
         
         form_nombre = st.text_input("Nombre Completo")
@@ -168,20 +168,20 @@ with st.sidebar:
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.cell(col_w, 15, f"TOTAL: {total_presupuesto} EUR", border=1, ln=True)
                     
-                    pdf_bytes = pdf.output()
+                    # --- CORRECCIÓN CRÍTICA AQUÍ ---
+                    # Convertimos el bytearray a bytes puros para que Streamlit no se queje
+                    pdf_bytes = bytes(pdf.output()) 
+                    
                     st.success("✅ ¡Informe generado!")
-                    st.download_button("📥 DESCARGAR PDF", pdf_bytes, f"Estudio_{form_nombre}.pdf", "application/pdf")
+                    st.download_button("📥 DESCARGAR PDF", pdf_bytes, f"Estudio_{form_nombre.replace(' ','_')}.pdf", "application/pdf")
                 except Exception as e:
                     st.error(f"Error PDF: {e}")
 
     st.markdown("---")
     
-    # --- SECCIÓN 2: CONTACTO Y CITAS (Restaurado) ---
+    # --- SECCIÓN 2: CONTACTO Y CITAS ---
     st.header("Asistencia Técnica")
-    
     st.info("¿Avería compleja? Agenda una visita con nuestros expertos.")
-    
-    # Botón Calendly GRANDE y destacado
     st.link_button("📅 RESERVAR CITA AHORA", ENLACE_CALENDARIO, type="primary")
     
     st.markdown("---")
