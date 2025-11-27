@@ -20,7 +20,6 @@ st.markdown("""
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         .stImage { max-width: 300px; }
-        /* Estilo para el botón de generar PDF */
         .stButton button {
             width: 100%;
         }
@@ -33,33 +32,30 @@ if "messages" not in st.session_state:
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = 0
 
-# --- TUS DATOS Y PRECIOS (CONFIGURACIÓN) ---
+# --- TUS DATOS Y PRECIOS ---
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
 MENSAJE_BIENVENIDA = "¡Hola! Soy la IA de SolarDan. Puedo analizar averías o ayudarte a generar un presupuesto. ¿Qué necesitas?"
 
-# Precios y Medidas (Configurable)
+# Precios y Medidas
 PRECIO_PANEL_450 = 67.0
-POTENCIA_PANEL_450 = 450 # Watts
-AREA_NECESARIA_POR_PANEL = 4.0 # m2 (Conservador para evitar sombras)
+POTENCIA_PANEL_450 = 450 
+AREA_NECESARIA_POR_PANEL = 4.0 
 
 PRECIO_INVERSOR_4KW = 400.0
 PRECIO_INVERSOR_6KW = 820.0
 PRECIO_INVERSOR_10KW = 1150.0
 
-# Estimación de Estructura, Cableado y Mano de obra
-# He puesto unos precios estimados lógicos, puedes cambiarlos aquí:
-PRECIO_SOPORTES_CABLES_POR_PANEL = 60.0 # Estructura aluminio + cableado
-PRECIO_MANO_OBRA_BASE = 300.0 # Desplazamiento y legalización básica
-PRECIO_MANO_OBRA_POR_PANEL = 50.0 # Montaje físico
+PRECIO_SOPORTES_CABLES_POR_PANEL = 60.0
+PRECIO_MANO_OBRA_BASE = 300.0
+PRECIO_MANO_OBRA_POR_PANEL = 50.0 
 
 # --- CLASE PARA GENERAR EL PDF ---
 class PresupuestoPDF(FPDF):
     def header(self):
-        # Intentamos poner el logo si existe
         if os.path.exists("logo.png"):
             self.image("logo.png", 10, 8, 33)
         self.set_font('helvetica', 'B', 15)
-        self.cell(80) # Mover a la derecha
+        self.cell(80)
         self.cell(30, 10, 'Estudio de Viabilidad Solar', 0, 0, 'C')
         self.ln(20)
 
@@ -78,43 +74,36 @@ except:
     st.stop()
 
 # ==========================================
-# 🟢 BARRA LATERAL (HERRAMIENTAS)
+# 🟢 BARRA LATERAL (ORGANIZADA)
 # ==========================================
 with st.sidebar:
     st.header("SolarDan Herramientas")
     
-    # --- PESTAÑA 1: CALCULADORA Y PDF ---
-    with st.expander("📝 SOLICITAR INFORME PDF", expanded=True):
-        st.write("Rellena los datos para obtener tu pre-estudio instantáneo.")
+    # --- SECCIÓN 1: GENERADOR PDF ---
+    with st.expander("📝 SOLICITAR INFORME PDF", expanded=False): # Lo pongo cerrado por defecto para no tapar el contacto
+        st.write("Rellena para obtener estudio instantáneo.")
         
         form_nombre = st.text_input("Nombre Completo")
-        form_direccion = st.text_input("Dirección de la vivienda")
-        form_latitud = st.number_input("Latitud (Ej: 28.123)", format="%.4f", value=28.1000)
-        form_area = st.number_input("Metros útiles de azotea (m²)", min_value=10, value=50)
+        form_direccion = st.text_input("Dirección")
+        form_latitud = st.number_input("Latitud", format="%.4f", value=28.1000)
+        form_area = st.number_input("Metros de azotea (m²)", min_value=10, value=50)
+        foto_azotea = st.file_uploader("Foto azotea", type=["jpg", "png", "jpeg"])
         
-        foto_azotea = st.file_uploader("Foto de la azotea (Obligatorio para informe)", type=["jpg", "png", "jpeg"])
-        
-        if st.button("📄 GENERAR INFORME PDF"):
+        if st.button("📄 GENERAR INFORME"):
             if not form_nombre or not foto_azotea:
-                st.error("Por favor, pon tu nombre y sube una foto.")
+                st.error("Faltan datos (Nombre o Foto).")
             else:
-                # --- LÓGICA MATEMÁTICA ---
-                # 1. Calculamos inclinación óptima (Simple: Latitud del lugar)
+                # CÁLCULOS
                 inclinacion_optima = form_latitud
-                
-                # 2. Número de paneles (Area util / 4m2)
                 num_paneles = int(form_area / AREA_NECESARIA_POR_PANEL)
-                
-                # 3. Potencia Total
                 potencia_total_w = num_paneles * POTENCIA_PANEL_450
                 potencia_total_kw = potencia_total_w / 1000
                 
-                # 4. Selección de Inversor
                 modelo_inversor = ""
                 precio_inversor = 0.0
                 
                 if potencia_total_kw > 10.5:
-                    st.warning("⚠️ La instalación supera los 10kW. Requiere estudio manual. Contacta con nosotros.")
+                    st.warning("Más de 10kW requiere estudio manual.")
                     st.stop()
                 elif potencia_total_kw > 6.0:
                     modelo_inversor = "Inversor Híbrido 10kW"
@@ -127,87 +116,79 @@ with st.sidebar:
                     precio_inversor = PRECIO_INVERSOR_4KW
                 
                 if num_paneles < 4:
-                    st.error("El espacio es muy pequeño para una instalación viable mínima.")
+                    st.error("Espacio insuficiente.")
                     st.stop()
 
-                # 5. Cálculos de Producción (5.2 HSP x 365 x 0.8 PR)
                 produccion_anual = potencia_total_kw * 5.2 * 365 * 0.8
-                
-                # 6. Presupuesto
                 coste_paneles = num_paneles * PRECIO_PANEL_450
                 coste_material_var = num_paneles * PRECIO_SOPORTES_CABLES_POR_PANEL
                 coste_mano_obra = PRECIO_MANO_OBRA_BASE + (num_paneles * PRECIO_MANO_OBRA_POR_PANEL)
                 total_presupuesto = coste_paneles + precio_inversor + coste_material_var + coste_mano_obra
 
-                # --- GENERACIÓN DEL PDF ---
-                pdf = PresupuestoPDF()
-                pdf.add_page()
-                pdf.set_font("helvetica", size=12)
-                
-                # Datos Cliente
-                pdf.cell(0, 10, f"Cliente: {form_nombre}", ln=True)
-                pdf.cell(0, 10, f"Dirección: {form_direccion}", ln=True)
-                pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
-                pdf.ln(10)
-                
-                # Datos Técnicos
-                pdf.set_font("helvetica", 'B', 12)
-                pdf.cell(0, 10, "1. ANÁLISIS TÉCNICO", ln=True)
-                pdf.set_font("helvetica", size=12)
-                pdf.cell(0, 10, f"- Ubicación (Latitud): {form_latitud}", ln=True)
-                pdf.cell(0, 10, f"- Inclinación Óptima Recomendada: {inclinacion_optima:.1f} grados", ln=True)
-                pdf.cell(0, 10, f"- Área disponible: {form_area} m2", ln=True)
-                pdf.cell(0, 10, f"- Potencia Instalable Estimada: {potencia_total_kw:.2f} kWp", ln=True)
-                pdf.cell(0, 10, f"- Paneles: {num_paneles} unidades de {POTENCIA_PANEL_450}W", ln=True)
-                pdf.cell(0, 10, f"- Producción Anual Estimada: {int(produccion_anual)} kWh/año", ln=True)
-                pdf.ln(5)
-                
-                # Foto
-                pdf.set_font("helvetica", 'B', 12)
-                pdf.cell(0, 10, "2. ESTADO DE CUBIERTA", ln=True)
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-                    tmp_file.write(foto_azotea.getvalue())
-                    tmp_path = tmp_file.name
-                    pdf.image(tmp_path, x=10, w=100) # Imagen insertada
-                pdf.ln(5)
+                # PDF
+                try:
+                    pdf = PresupuestoPDF()
+                    pdf.add_page()
+                    pdf.set_font("helvetica", size=12)
+                    
+                    def clean_text(text):
+                        return text.encode('latin-1', 'replace').decode('latin-1')
 
-                # Desglose Económico
-                pdf.add_page()
-                pdf.set_font("helvetica", 'B', 12)
-                pdf.cell(0, 10, "3. ESTIMACIÓN ECONÓMICA (PRE-PRESUPUESTO)", ln=True)
-                pdf.set_font("helvetica", size=11)
-                
-                # Tabla simple
-                col_w = 140
-                pdf.cell(col_w, 10, f"Paneles Solares ({num_paneles} x {PRECIO_PANEL_450} eur): {coste_paneles} EUR", border=1, ln=True)
-                pdf.cell(col_w, 10, f"{modelo_inversor}: {precio_inversor} EUR", border=1, ln=True)
-                pdf.cell(col_w, 10, f"Estructuras, Cableado y Protecciones: {coste_material_var} EUR", border=1, ln=True)
-                pdf.cell(col_w, 10, f"Mano de Obra, Legalización y Montaje: {coste_mano_obra} EUR", border=1, ln=True)
-                
-                pdf.set_font("helvetica", 'B', 12)
-                pdf.cell(col_w, 15, f"TOTAL ESTIMADO: {total_presupuesto} EUR", border=1, ln=True)
-                
-                pdf.ln(10)
-                pdf.set_font("helvetica", 'I', 10)
-                pdf.multi_cell(0, 5, "NOTA: Este documento es una estimación preliminar basada en datos remotos. El precio final puede variar tras la visita técnica presencial. Los precios no incluyen IGIC/IVA.")
-                
-                # Generar bytes del PDF
-                pdf_bytes = pdf.output(dest='S').encode('latin-1')
-                
-                # Botón de descarga
-                st.success("✅ ¡Informe generado con éxito!")
-                st.download_button(
-                    label="📥 DESCARGAR INFORME PDF",
-                    data=pdf_bytes,
-                    file_name=f"Estudio_SolarDan_{form_nombre.replace(' ','_')}.pdf",
-                    mime="application/pdf"
-                )
+                    pdf.cell(0, 10, f"Cliente: {clean_text(form_nombre)}", ln=True)
+                    pdf.cell(0, 10, f"Direccion: {clean_text(form_direccion)}", ln=True)
+                    pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
+                    pdf.ln(10)
+                    
+                    pdf.set_font("helvetica", 'B', 12)
+                    pdf.cell(0, 10, "1. ANALISIS TECNICO", ln=True)
+                    pdf.set_font("helvetica", size=12)
+                    pdf.cell(0, 10, f"- Ubicacion: {form_latitud}", ln=True)
+                    pdf.cell(0, 10, f"- Potencia Estimada: {potencia_total_kw:.2f} kWp", ln=True)
+                    pdf.cell(0, 10, f"- Paneles: {num_paneles} x {POTENCIA_PANEL_450}W", ln=True)
+                    pdf.cell(0, 10, f"- Produccion: {int(produccion_anual)} kWh/anual", ln=True)
+                    pdf.ln(5)
+                    
+                    pdf.set_font("helvetica", 'B', 12)
+                    pdf.cell(0, 10, "2. ESTADO DE CUBIERTA", ln=True)
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                        tmp_file.write(foto_azotea.getvalue())
+                        tmp_path = tmp_file.name
+                        pdf.image(tmp_path, x=10, w=100)
+                    pdf.ln(5)
+
+                    pdf.add_page()
+                    pdf.set_font("helvetica", 'B', 12)
+                    pdf.cell(0, 10, "3. ESTIMACION ECONOMICA", ln=True)
+                    pdf.set_font("helvetica", size=11)
+                    col_w = 140
+                    pdf.cell(col_w, 10, f"Paneles Solares: {coste_paneles} EUR", border=1, ln=True)
+                    pdf.cell(col_w, 10, f"{modelo_inversor}: {precio_inversor} EUR", border=1, ln=True)
+                    pdf.cell(col_w, 10, f"Estructuras y Cableado: {coste_material_var} EUR", border=1, ln=True)
+                    pdf.cell(col_w, 10, f"Mano de Obra y Legalizacion: {coste_mano_obra} EUR", border=1, ln=True)
+                    pdf.set_font("helvetica", 'B', 12)
+                    pdf.cell(col_w, 15, f"TOTAL: {total_presupuesto} EUR", border=1, ln=True)
+                    
+                    pdf_bytes = pdf.output()
+                    st.success("✅ ¡Informe generado!")
+                    st.download_button("📥 DESCARGAR PDF", pdf_bytes, f"Estudio_{form_nombre}.pdf", "application/pdf")
+                except Exception as e:
+                    st.error(f"Error PDF: {e}")
 
     st.markdown("---")
     
-    # --- BOTONES DE ACCIÓN RÁPIDA ---
-    st.link_button("📅 RESERVAR CITA TÉCNICA", ENLACE_CALENDARIO, type="primary")
+    # --- SECCIÓN 2: CONTACTO Y CITAS (Restaurado) ---
+    st.header("Asistencia Técnica")
     
+    st.info("¿Avería compleja? Agenda una visita con nuestros expertos.")
+    
+    # Botón Calendly GRANDE y destacado
+    st.link_button("📅 RESERVAR CITA AHORA", ENLACE_CALENDARIO, type="primary")
+    
+    st.markdown("---")
+    st.write("**Contacto Directo:**")
+    st.write("📧 info@solardan.com")
+    
+    st.markdown("---")
     if st.button("🗑️ Borrar conversación"):
         st.session_state.messages = []
         st.session_state["uploader_key"] += 1
@@ -215,9 +196,8 @@ with st.sidebar:
     
     st.caption("© 2025 SolarDan.")
 
-
 # ==========================================
-# 🟢 ÁREA PRINCIPAL (CHAT CON IA)
+# 🟢 ÁREA PRINCIPAL
 # ==========================================
 
 # --- CABECERA ---
@@ -231,10 +211,10 @@ with col2:
 st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
 st.caption("Asistente IA + Calculadora de Presupuestos")
 
-# --- LÓGICA DE IA ---
+# --- LÓGICA IA ---
 instrucciones_sistema = f"""
 Eres el asistente técnico de "SolarDan".
-1. Si el usuario pide presupuesto, dile: "¡Claro! Por favor, ve al menú lateral izquierdo y rellena el formulario 'SOLICITAR INFORME PDF' para obtener un estudio detallado al instante."
+1. Si el usuario pide presupuesto, dile: "¡Claro! Ve al menú lateral izquierdo, sección 'SOLICITAR INFORME PDF' para tu estudio."
 2. Si tiene dudas técnicas, respóndelas.
 3. Si hay peligro, manda apagar todo.
 4. Si la avería es grave, cita: {ENLACE_CALENDARIO}
@@ -252,7 +232,7 @@ for message in st.session_state.messages:
         else:
             st.markdown(message["content"])
 
-# --- INPUT DE FOTOS (ENCIMA DEL CHAT) ---
+# --- INPUT FOTOS ---
 with st.expander("📸 Adjuntar imagen a la consulta", expanded=False):
     uploaded_file = st.file_uploader(
         "Sube tu foto para la IA:", 
@@ -262,7 +242,7 @@ with st.expander("📸 Adjuntar imagen a la consulta", expanded=False):
     if uploaded_file:
         st.image(uploaded_file, width=150)
 
-# --- INPUT DE TEXTO ---
+# --- INPUT TEXTO ---
 if prompt := st.chat_input("Escribe tu consulta..."):
     content_to_send = [prompt]
     with st.chat_message("user"):
@@ -280,11 +260,16 @@ if prompt := st.chat_input("Escribe tu consulta..."):
             if uploaded_file:
                 response = model.generate_content(content_to_send)
             else:
-                chat = model.start_chat(history=[
-                    {"role": m["role"], "parts": [m["content"]]} 
-                    for m in st.session_state.messages[:-1] 
-                    if isinstance(m["content"], str) and m["content"] != MENSAJE_BIENVENIDA
-                ])
+                text_history = []
+                for m in st.session_state.messages[:-1]:
+                    content = m["content"]
+                    if isinstance(content, list):
+                         for part in content:
+                             if isinstance(part, str): text_history.append({"role": m["role"], "parts": [part]})
+                    elif content != MENSAJE_BIENVENIDA:
+                        text_history.append({"role": m["role"], "parts": [content]})
+                
+                chat = model.start_chat(history=text_history)
                 response = chat.send_message(prompt)
 
         text_response = response.text
