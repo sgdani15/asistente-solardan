@@ -52,8 +52,12 @@ PRECIO_MANO_OBRA_POR_PANEL = 50.0
 # --- CLASE PARA GENERAR EL PDF ---
 class PresupuestoPDF(FPDF):
     def header(self):
-        if os.path.exists("logo.png"):
+        # CAMBIO AQUÍ: Busca primero el logo específico para PDF
+        if os.path.exists("logo_pdf.png"):
+            self.image("logo_pdf.png", 10, 8, 33)
+        elif os.path.exists("logo.png"):
             self.image("logo.png", 10, 8, 33)
+            
         self.set_font('helvetica', 'B', 15)
         self.cell(80)
         self.cell(30, 10, 'Estudio de Viabilidad Solar', 0, 0, 'C')
@@ -168,8 +172,6 @@ with st.sidebar:
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.cell(col_w, 15, f"TOTAL: {total_presupuesto} EUR", border=1, ln=True)
                     
-                    # --- CORRECCIÓN CRÍTICA AQUÍ ---
-                    # Convertimos el bytearray a bytes puros para que Streamlit no se queje
                     pdf_bytes = bytes(pdf.output()) 
                     
                     st.success("✅ ¡Informe generado!")
