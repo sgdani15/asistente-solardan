@@ -52,37 +52,32 @@ PRECIO_MANO_OBRA_POR_PANEL = 50.0
 # --- CLASE PARA GENERAR EL PDF (DISEÑO MEJORADO) ---
 class PresupuestoPDF(FPDF):
     def header(self):
-        # 1. LOGO (Izquierda)
-        # Usamos coordenadas X=10, Y=10 y un ancho de 35mm
+        # 1. LOGO
         if os.path.exists("logo_pdf.png"):
             self.image("logo_pdf.png", 10, 10, 35)
         elif os.path.exists("logo.png"):
             self.image("logo.png", 10, 10, 35)
             
-        # 2. TÍTULO (Derecha y más abajo)
+        # 2. TÍTULO
         self.set_font('helvetica', 'B', 16)
-        # Movemos el cursor a X=50, Y=18 para que no pise el logo y baje un poco
         self.set_xy(50, 18) 
-        # 'R' alinea el texto a la derecha de la página
         self.cell(0, 10, 'Estudio de Viabilidad Solar', border=0, ln=1, align='R')
         
-        # 3. SUBTÍTULO O FECHA (Opcional, debajo del título)
+        # 3. SUBTÍTULO
         self.set_font('helvetica', 'I', 10)
-        self.set_x(50) # Volvemos a posicionarnos a la derecha del logo
+        self.set_x(50) 
         self.cell(0, 5, 'Informe Técnico Preliminar - SolarDan', border=0, ln=1, align='R')
 
-        # 4. LÍNEA SEPARADORA (Decoración)
-        self.set_draw_color(255, 140, 0) # Naranja oscuro (RGB)
+        # 4. LÍNEA
+        self.set_draw_color(255, 140, 0) # Naranja
         self.set_line_width(0.5)
-        self.line(10, 38, 200, 38) # Línea horizontal de lado a lado (Y=38)
-
-        # 5. ESPACIO DE SEGURIDAD
-        self.ln(25) # Bajamos 25 unidades para que el contenido empiece limpio
+        self.line(10, 38, 200, 38)
+        self.ln(25)
 
     def footer(self):
         self.set_y(-15)
         self.set_font('helvetica', 'I', 8)
-        self.set_text_color(128, 128, 128) # Gris
+        self.set_text_color(128, 128, 128)
         self.cell(0, 10, f'Documento generado por IA - SolarDan - Página {self.page_no()}', 0, 0, 'C')
 
 # --- CONEXIÓN IA ---
@@ -95,17 +90,23 @@ except:
     st.stop()
 
 # ==========================================
-# 🟢 BARRA LATERAL (ORGANIZADA)
+# 🟢 BARRA LATERAL (HERRAMIENTAS)
 # ==========================================
 with st.sidebar:
     st.header("SolarDan Herramientas")
     
     # --- SECCIÓN 1: GENERADOR PDF ---
     with st.expander("📝 SOLICITAR INFORME PDF", expanded=False):
-        st.write("Rellena para obtener estudio instantáneo.")
+        st.write("Datos para el estudio:")
         
         form_nombre = st.text_input("Nombre Completo")
         form_direccion = st.text_input("Dirección")
+        
+        # NUEVOS CAMPOS SOLICITADOS
+        form_potencia_actual = st.number_input("Potencia Contratada (kW)", min_value=1.0, value=4.6, step=0.1)
+        form_orientacion_azotea = st.selectbox("Orientación de la azotea", 
+                                               ["Sur (Ideal)", "Sureste", "Suroeste", "Este", "Oeste", "Norte"])
+
         form_latitud = st.number_input("Latitud", format="%.4f", value=28.1000)
         form_area = st.number_input("Metros de azotea (m²)", min_value=10, value=50)
         foto_azotea = st.file_uploader("Foto azotea", type=["jpg", "png", "jpeg"])
@@ -115,10 +116,14 @@ with st.sidebar:
                 st.error("Faltan datos (Nombre o Foto).")
             else:
                 # CÁLCULOS
-                inclinacion_optima = form_latitud
                 num_paneles = int(form_area / AREA_NECESARIA_POR_PANEL)
                 potencia_total_w = num_paneles * POTENCIA_PANEL_450
                 potencia_total_kw = potencia_total_w / 1000
+                
+                # Análisis de sobredimensionamiento (Aviso en PDF)
+                aviso_sobredimension = ""
+                if potencia_total_kw > (form_potencia_actual * 1.5):
+                    aviso_sobredimension = "NOTA: La capacidad de la cubierta es muy superior a su potencia contratada. Se recomienda ajustar la instalacion al consumo real."
                 
                 modelo_inversor = ""
                 precio_inversor = 0.0
@@ -150,53 +155,79 @@ with st.sidebar:
                 try:
                     pdf = PresupuestoPDF()
                     pdf.add_page()
-                    pdf.set_font("helvetica", size=12)
                     
                     def clean_text(text):
                         return text.encode('latin-1', 'replace').decode('latin-1')
 
-                    pdf.cell(0, 10, f"Cliente: {clean_text(form_nombre)}", ln=True)
-                    pdf.cell(0, 10, f"Direccion: {clean_text(form_direccion)}", ln=True)
-                    pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
-                    pdf.ln(10)
-                    
-                    pdf.set_font("helvetica", 'B', 12)
-                    pdf.set_fill_color(240, 240, 240) # Fondo gris clarito para títulos
-                    pdf.cell(0, 10, "  1. ANALISIS TECNICO", ln=True, fill=True)
-                    pdf.set_font("helvetica", size=12)
-                    pdf.ln(2)
-                    pdf.cell(0, 8, f"   - Ubicacion: {form_latitud}", ln=True)
-                    pdf.cell(0, 8, f"   - Potencia Estimada: {potencia_total_kw:.2f} kWp", ln=True)
-                    pdf.cell(0, 8, f"   - Paneles: {num_paneles} x {POTENCIA_PANEL_450}W", ln=True)
-                    pdf.cell(0, 8, f"   - Produccion: {int(produccion_anual)} kWh/anual", ln=True)
+                    # Datos Cliente
+                    pdf.set_font("helvetica", size=11)
+                    pdf.cell(0, 6, f"Cliente: {clean_text(form_nombre)}", ln=True)
+                    pdf.cell(0, 6, f"Direccion: {clean_text(form_direccion)}", ln=True)
+                    pdf.cell(0, 6, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
                     pdf.ln(5)
                     
+                    # 1. ANÁLISIS TÉCNICO
+                    pdf.set_font("helvetica", 'B', 12)
+                    pdf.set_fill_color(240, 240, 240)
+                    pdf.cell(0, 10, "  1. ANALISIS TECNICO Y SITUACION", ln=True, fill=True)
+                    pdf.set_font("helvetica", size=11)
+                    pdf.ln(2)
+                    
+                    # Bloque de Potencias (Nuevo)
+                    pdf.cell(0, 7, f"   - Potencia Contratada Actual: {form_potencia_actual} kW", ln=True)
+                    pdf.set_font("helvetica", 'B', 11)
+                    pdf.cell(0, 7, f"   - Potencia Fotovoltaica Instalable: {potencia_total_kw:.2f} kWp", ln=True)
+                    pdf.set_font("helvetica", size=11)
+                    
+                    if aviso_sobredimension:
+                        pdf.set_text_color(220, 50, 50) # Rojo para avisos
+                        pdf.set_font("helvetica", 'I', 9)
+                        pdf.multi_cell(0, 5, f"     {clean_text(aviso_sobredimension)}")
+                        pdf.set_text_color(0, 0, 0) # Volver a negro
+                        pdf.set_font("helvetica", size=11)
+
+                    # Bloque de Orientación (Nuevo)
+                    pdf.ln(2)
+                    pdf.cell(0, 7, f"   - Orientacion Cubierta Cliente: {clean_text(form_orientacion_azotea)}", ln=True)
+                    pdf.cell(0, 7, f"   - Estrategia de Diseno: Estructuras orientadas al SUR MAGNETICO", ln=True)
+                    pdf.cell(0, 7, f"   - Inclinacion Optima (Latitud): {form_latitud} grados", ln=True)
+                    
+                    pdf.ln(2)
+                    pdf.cell(0, 7, f"   - Area disponible: {form_area} m2", ln=True)
+                    pdf.cell(0, 7, f"   - Produccion Estimada: {int(produccion_anual)} kWh/anual", ln=True)
+                    pdf.ln(5)
+                    
+                    # 2. ESTADO DE CUBIERTA
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.cell(0, 10, "  2. ESTADO DE CUBIERTA", ln=True, fill=True)
                     pdf.ln(5)
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                         tmp_file.write(foto_azotea.getvalue())
                         tmp_path = tmp_file.name
-                        # Centramos la imagen
-                        pdf.image(tmp_path, x=55, w=100) 
+                        pdf.image(tmp_path, x=55, w=100)
                     pdf.ln(5)
 
+                    # 3. ECONÓMICO
                     pdf.add_page()
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.cell(0, 10, "  3. ESTIMACION ECONOMICA", ln=True, fill=True)
                     pdf.set_font("helvetica", size=11)
                     pdf.ln(5)
                     col_w = 140
-                    # Altura de celda un poco mayor (12)
-                    pdf.cell(col_w, 12, f"  Paneles Solares: {coste_paneles} EUR", border=1, ln=True)
+                    
+                    pdf.cell(col_w, 12, f"  Paneles Solares ({num_paneles} uds x 450W): {coste_paneles} EUR", border=1, ln=True)
                     pdf.cell(col_w, 12, f"  {modelo_inversor}: {precio_inversor} EUR", border=1, ln=True)
                     pdf.cell(col_w, 12, f"  Estructuras y Cableado: {coste_material_var} EUR", border=1, ln=True)
                     pdf.cell(col_w, 12, f"  Mano de Obra y Legalizacion: {coste_mano_obra} EUR", border=1, ln=True)
                     
                     pdf.set_font("helvetica", 'B', 12)
-                    pdf.set_fill_color(255, 250, 205) # Fondo amarillo pálido para el total
-                    pdf.cell(col_w, 15, f"  TOTAL: {total_presupuesto} EUR", border=1, ln=True, fill=True)
+                    pdf.set_fill_color(255, 250, 205)
+                    pdf.cell(col_w, 15, f"  TOTAL ESTIMADO: {total_presupuesto} EUR", border=1, ln=True, fill=True)
                     
+                    pdf.ln(5)
+                    pdf.set_font("helvetica", 'I', 9)
+                    pdf.multi_cell(0, 5, "NOTA: Estudio valido salvo error u omision. Precios sin impuestos (IGIC/IVA). La orientacion final de las placas se ajustara al Sur Magnetico para maximizar produccion.")
+
                     pdf_bytes = bytes(pdf.output()) 
                     st.success("✅ ¡Informe generado!")
                     st.download_button("📥 DESCARGAR PDF", pdf_bytes, f"Estudio_{form_nombre.replace(' ','_')}.pdf", "application/pdf")
