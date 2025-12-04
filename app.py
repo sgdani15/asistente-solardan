@@ -84,7 +84,7 @@ class PresupuestoPDF(FPDF):
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    # USAMOS EL MODELO GEMINI 2.5 FLASH (EL MÁS NUEVO DISPONIBLE)
+    # USAMOS EL MODELO GEMINI 2.5 FLASH
     model = genai.GenerativeModel('gemini-2.5-flash')
 except:
     st.error("⚠️ Error: Problema con la API Key o el modelo.")
@@ -265,7 +265,7 @@ with col2:
 st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
 st.caption("Asistente IA + Calculadora de Presupuestos")
 
-# --- LÓGICA IA (AQUÍ ESTÁ LA MAGIA DE LA SEGURIDAD) ---
+# --- LÓGICA IA (AQUÍ ESTÁ LA MODIFICACIÓN DE SEGURIDAD/CITAS) ---
 instrucciones_sistema = f"""
 Eres el asistente técnico virtual de la empresa "SolarDan".
 
@@ -274,10 +274,13 @@ TUS FUNCIONES Y PERSONALIDAD:
 2. SEGURIDAD CRÍTICA (PRIORIDAD MÁXIMA): Si detectas humo, fuego, chispas, cables quemados o riesgo eléctrico en el texto o la imagen:
    - Ordena INMEDIATAMENTE apagar el sistema/inversor.
    - NO des soluciones caseras.
-   - Manda contactar urgente con un técnico.
-3. PRESUPUESTOS: Si el usuario pide precio, informe o presupuesto, dile EXACTAMENTE: "¡Claro! Para darte un precio exacto, por favor rellena el formulario 'SOLICITAR INFORME PDF' que tienes en el menú lateral izquierdo."
-4. SOPORTE TÉCNICO: Resuelve dudas sobre configuración, limpieza y mantenimiento.
-5. CITA TÉCNICA: Si la avería es compleja y no hay riesgo inmediato, sugiere pedir cita aquí: {ENLACE_CALENDARIO}
+   - Diles que es un riesgo grave y que deben agendar una cita urgente aquí: {ENLACE_CALENDARIO}
+3. AVERÍAS COMPLEJAS O DIFÍCILES: Si la solución requiere abrir el inversor, cambiar piezas internas o no estás 100% seguro:
+   - Explica cuál podría ser el problema.
+   - NO intentes guiarles paso a paso para evitar daños mayores.
+   - Recomienda amablemente que vaya un técnico de SolarDan para revisarlo. Facilita siempre este enlace: {ENLACE_CALENDARIO}
+4. PRESUPUESTOS: Si el usuario pide precio, informe o presupuesto, dile EXACTAMENTE: "¡Claro! Para darte un precio exacto, por favor rellena el formulario 'SOLICITAR INFORME PDF' que tienes en el menú lateral izquierdo."
+5. SOPORTE TÉCNICO BÁSICO: Resuelve dudas sobre configuración, limpieza y mantenimiento sencillo.
 
 No hables de temas que no sean energía solar.
 """
@@ -321,7 +324,7 @@ if prompt := st.chat_input("Escribe tu consulta..."):
         with st.spinner("SolarDan IA pensando..."):
             if uploaded_file:
                 # Utilizamos el system_instruction que acabamos de definir, 
-                # donde está la orden clara de "SEGURIDAD CRÍTICA"
+                # donde está la orden clara de "SEGURIDAD CRÍTICA" y "CITAS"
                 response = model.generate_content(content_to_send)
             else:
                 text_history = []
