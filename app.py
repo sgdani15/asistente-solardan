@@ -34,7 +34,7 @@ if "uploader_key" not in st.session_state:
 
 # --- TUS DATOS Y PRECIOS ---
 ENLACE_CALENDARIO = "https://calendly.com/solardangrancanaria" 
-MENSAJE_BIENVENIDA = "¡Hola! Soy la IA de SolarDan. Puedo analizar averías o ayudarte a generar un presupuesto. ¿Qué necesitas?"
+MENSAJE_BIENVENIDA = "¡Hola! Soy la IA de SolarDan. Puedo analizar averías (incluso con fotos) o ayudarte a generar un presupuesto. ¿Qué necesitas?"
 
 # Precios y Medidas
 PRECIO_PANEL_450 = 67.0
@@ -80,14 +80,14 @@ class PresupuestoPDF(FPDF):
         self.set_text_color(128, 128, 128)
         self.cell(0, 10, f'Documento generado por IA - SolarDan - Página {self.page_no()}', 0, 0, 'C')
 
-# --- CONEXIÓN IA (CONFIGURACIÓN CORREGIDA) ---
+# --- CONEXIÓN IA ---
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    # AQUI ESTABA EL ERROR: Forzamos la versión 2.5 que sí tienes disponible
+    # USAMOS EL MODELO GEMINI 2.5 FLASH (EL MÁS NUEVO DISPONIBLE)
     model = genai.GenerativeModel('gemini-2.5-flash')
 except:
-    st.error("⚠️ Error crítico: Revisa la API Key o la disponibilidad del modelo en Google AI Studio.")
+    st.error("⚠️ Error: Problema con la API Key o el modelo.")
     st.stop()
 
 # ==========================================
@@ -103,7 +103,6 @@ with st.sidebar:
         form_nombre = st.text_input("Nombre Completo")
         form_direccion = st.text_input("Dirección")
         
-        # CAMPOS TÉCNICOS EXTRA
         form_potencia_actual = st.number_input("Potencia Contratada (kW)", min_value=1.0, value=4.6, step=0.1)
         form_orientacion_azotea = st.selectbox("Orientación de la azotea", 
                                                ["Sur (Ideal)", "Sureste", "Suroeste", "Este", "Oeste", "Norte"])
@@ -121,7 +120,6 @@ with st.sidebar:
                 potencia_total_w = num_paneles * POTENCIA_PANEL_450
                 potencia_total_kw = potencia_total_w / 1000
                 
-                # Análisis de sobredimensionamiento
                 aviso_sobredimension = ""
                 if potencia_total_kw > (form_potencia_actual * 1.5):
                     aviso_sobredimension = "NOTA: La capacidad de la cubierta es muy superior a su potencia contratada. Se recomienda ajustar la instalacion al consumo real."
@@ -158,37 +156,34 @@ with st.sidebar:
                     pdf.add_page()
                     
                     def clean_text(text):
-                        # Limpieza básica para evitar errores de caracteres raros
                         return text.encode('latin-1', 'replace').decode('latin-1')
 
-                    # Datos Cliente
+                    # Datos
                     pdf.set_font("helvetica", size=11)
                     pdf.cell(0, 6, f"Cliente: {clean_text(form_nombre)}", ln=True)
                     pdf.cell(0, 6, f"Direccion: {clean_text(form_direccion)}", ln=True)
                     pdf.cell(0, 6, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
                     pdf.ln(5)
                     
-                    # 1. ANÁLISIS TÉCNICO
+                    # 1. ANÁLISIS
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.set_fill_color(240, 240, 240)
                     pdf.cell(0, 10, "  1. ANALISIS TECNICO Y SITUACION", ln=True, fill=True)
                     pdf.set_font("helvetica", size=11)
                     pdf.ln(2)
                     
-                    # Bloque de Potencias
                     pdf.cell(0, 7, f"   - Potencia Contratada Actual: {form_potencia_actual} kW", ln=True)
                     pdf.set_font("helvetica", 'B', 11)
                     pdf.cell(0, 7, f"   - Potencia Fotovoltaica Instalable: {potencia_total_kw:.2f} kWp", ln=True)
                     pdf.set_font("helvetica", size=11)
                     
                     if aviso_sobredimension:
-                        pdf.set_text_color(220, 50, 50) # Rojo
+                        pdf.set_text_color(220, 50, 50) 
                         pdf.set_font("helvetica", 'I', 9)
                         pdf.multi_cell(0, 5, f"     {clean_text(aviso_sobredimension)}")
-                        pdf.set_text_color(0, 0, 0) # Negro
+                        pdf.set_text_color(0, 0, 0) 
                         pdf.set_font("helvetica", size=11)
 
-                    # Bloque de Orientación
                     pdf.ln(2)
                     pdf.cell(0, 7, f"   - Orientacion Cubierta Cliente: {clean_text(form_orientacion_azotea)}", ln=True)
                     pdf.cell(0, 7, f"   - Estrategia de Diseno: Estructuras orientadas al SUR MAGNETICO", ln=True)
@@ -199,7 +194,7 @@ with st.sidebar:
                     pdf.cell(0, 7, f"   - Produccion Estimada: {int(produccion_anual)} kWh/anual", ln=True)
                     pdf.ln(5)
                     
-                    # 2. ESTADO DE CUBIERTA
+                    # 2. FOTO
                     pdf.set_font("helvetica", 'B', 12)
                     pdf.cell(0, 10, "  2. ESTADO DE CUBIERTA", ln=True, fill=True)
                     pdf.ln(5)
@@ -270,13 +265,21 @@ with col2:
 st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
 st.caption("Asistente IA + Calculadora de Presupuestos")
 
-# --- LÓGICA IA ---
+# --- LÓGICA IA (AQUÍ ESTÁ LA MAGIA DE LA SEGURIDAD) ---
 instrucciones_sistema = f"""
-Eres el asistente técnico de "SolarDan".
-1. Si el usuario pide presupuesto, dile: "¡Claro! Ve al menú lateral izquierdo, sección 'SOLICITAR INFORME PDF' para tu estudio."
-2. Si tiene dudas técnicas, respóndelas.
-3. Si hay peligro, manda apagar todo.
-4. Si la avería es grave, cita: {ENLACE_CALENDARIO}
+Eres el asistente técnico virtual de la empresa "SolarDan".
+
+TUS FUNCIONES Y PERSONALIDAD:
+1. ANÁLISIS DE IMÁGENES: Si el usuario sube una foto, analízala en busca de averías, roturas o puntos calientes.
+2. SEGURIDAD CRÍTICA (PRIORIDAD MÁXIMA): Si detectas humo, fuego, chispas, cables quemados o riesgo eléctrico en el texto o la imagen:
+   - Ordena INMEDIATAMENTE apagar el sistema/inversor.
+   - NO des soluciones caseras.
+   - Manda contactar urgente con un técnico.
+3. PRESUPUESTOS: Si el usuario pide precio, informe o presupuesto, dile EXACTAMENTE: "¡Claro! Para darte un precio exacto, por favor rellena el formulario 'SOLICITAR INFORME PDF' que tienes en el menú lateral izquierdo."
+4. SOPORTE TÉCNICO: Resuelve dudas sobre configuración, limpieza y mantenimiento.
+5. CITA TÉCNICA: Si la avería es compleja y no hay riesgo inmediato, sugiere pedir cita aquí: {ENLACE_CALENDARIO}
+
+No hables de temas que no sean energía solar.
 """
 
 # Historial
@@ -317,7 +320,8 @@ if prompt := st.chat_input("Escribe tu consulta..."):
     try:
         with st.spinner("SolarDan IA pensando..."):
             if uploaded_file:
-                # Interacción única para imágenes
+                # Utilizamos el system_instruction que acabamos de definir, 
+                # donde está la orden clara de "SEGURIDAD CRÍTICA"
                 response = model.generate_content(content_to_send)
             else:
                 text_history = []
@@ -329,6 +333,7 @@ if prompt := st.chat_input("Escribe tu consulta..."):
                     elif content != MENSAJE_BIENVENIDA:
                         text_history.append({"role": m["role"], "parts": [content]})
                 
+                # Pasamos system_instruction al modelo al iniciarlo, así que el chat también lo respeta
                 chat = model.start_chat(history=text_history)
                 response = chat.send_message(prompt)
 
