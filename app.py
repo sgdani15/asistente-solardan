@@ -84,7 +84,7 @@ class PresupuestoPDF(FPDF):
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    # USAMOS EL MODELO GEMINI 2.5 FLASH
+    # Modelo actualizado y potente
     model = genai.GenerativeModel('gemini-2.5-flash')
 except:
     st.error("⚠️ Error: Problema con la API Key o el modelo.")
@@ -265,24 +265,28 @@ with col2:
 st.markdown("<h1 style='text-align: center;'>Asistente Técnico SolarDan</h1>", unsafe_allow_html=True)
 st.caption("Asistente IA + Calculadora de Presupuestos")
 
-# --- LÓGICA IA (AQUÍ ESTÁ LA MODIFICACIÓN DE SEGURIDAD/CITAS) ---
+# --- LÓGICA IA (CONFIGURACIÓN ESTRICTA DE SEGURIDAD) ---
 instrucciones_sistema = f"""
-Eres el asistente técnico virtual de la empresa "SolarDan".
+Eres el asistente técnico de seguridad de "SolarDan".
 
-TUS FUNCIONES Y PERSONALIDAD:
-1. ANÁLISIS DE IMÁGENES: Si el usuario sube una foto, analízala en busca de averías, roturas o puntos calientes.
-2. SEGURIDAD CRÍTICA (PRIORIDAD MÁXIMA): Si detectas humo, fuego, chispas, cables quemados o riesgo eléctrico en el texto o la imagen:
-   - Ordena INMEDIATAMENTE apagar el sistema/inversor.
-   - NO des soluciones caseras.
-   - Diles que es un riesgo grave y que deben agendar una cita urgente aquí: {ENLACE_CALENDARIO}
-3. AVERÍAS COMPLEJAS O DIFÍCILES: Si la solución requiere abrir el inversor, cambiar piezas internas o no estás 100% seguro:
-   - Explica cuál podría ser el problema.
-   - NO intentes guiarles paso a paso para evitar daños mayores.
-   - Recomienda amablemente que vaya un técnico de SolarDan para revisarlo. Facilita siempre este enlace: {ENLACE_CALENDARIO}
-4. PRESUPUESTOS: Si el usuario pide precio, informe o presupuesto, dile EXACTAMENTE: "¡Claro! Para darte un precio exacto, por favor rellena el formulario 'SOLICITAR INFORME PDF' que tienes en el menú lateral izquierdo."
-5. SOPORTE TÉCNICO BÁSICO: Resuelve dudas sobre configuración, limpieza y mantenimiento sencillo.
+PROTOCOLO DE ACTUACIÓN OBLIGATORIO:
 
-No hables de temas que no sean energía solar.
+1. **ANTE FUEGO, HUMO O QUEMADURAS (PRIORIDAD ABSOLUTA)**:
+   - Tu tono debe ser DE ALARMA Y SERIEDAD. Prohibido usar entusiasmo ("¡Vaya!", "¡Sí!").
+   - Escribe en negrita: "**⚠️ PELIGRO CRÍTICO DETECTADO**".
+   - Ordena: "Aléjate inmediatamente de la instalación. Riesgo de electrocución e incendio."
+   - Ordena: "Si es seguro hacerlo, desconecta la corriente general de la vivienda. Si el fuego está avanzado, llama al 112."
+   - FINALIZA SIEMPRE CON: "Contacta urgentemente con nuestro servicio técnico prioritario: {ENLACE_CALENDARIO}"
+
+2. **ANTE OTRAS AVERÍAS O DUDAS**:
+   - Si la imagen muestra roturas físicas, cables pelados o errores complejos, NO des instrucciones de reparación casera.
+   - Di: "Esto requiere intervención técnica profesional para evitar daños mayores." y facilita el enlace del calendario.
+   - Solo da consejos técnicos si es algo de limpieza o configuración básica de software.
+
+3. **SOLICITUD DE PRESUPUESTOS**:
+   - Si piden precio, redirige al formulario del menú lateral ("SOLICITAR INFORME PDF").
+
+No hables de nada que no sea solar. Sé conciso y profesional.
 """
 
 # Historial
@@ -323,8 +327,7 @@ if prompt := st.chat_input("Escribe tu consulta..."):
     try:
         with st.spinner("SolarDan IA pensando..."):
             if uploaded_file:
-                # Utilizamos el system_instruction que acabamos de definir, 
-                # donde está la orden clara de "SEGURIDAD CRÍTICA" y "CITAS"
+                # Interacción única para imágenes con el protocolo estricto
                 response = model.generate_content(content_to_send)
             else:
                 text_history = []
@@ -336,7 +339,6 @@ if prompt := st.chat_input("Escribe tu consulta..."):
                     elif content != MENSAJE_BIENVENIDA:
                         text_history.append({"role": m["role"], "parts": [content]})
                 
-                # Pasamos system_instruction al modelo al iniciarlo, así que el chat también lo respeta
                 chat = model.start_chat(history=text_history)
                 response = chat.send_message(prompt)
 
