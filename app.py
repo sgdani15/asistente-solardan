@@ -49,7 +49,7 @@ PRECIO_SOPORTES_CABLES_POR_PANEL = 60.0
 PRECIO_MANO_OBRA_BASE = 300.0
 PRECIO_MANO_OBRA_POR_PANEL = 50.0 
 
-# --- CLASE PARA GENERAR EL PDF (DISEÑO MEJORADO) ---
+# --- CLASE PARA GENERAR EL PDF ---
 class PresupuestoPDF(FPDF):
     def header(self):
         # 1. LOGO
@@ -80,13 +80,14 @@ class PresupuestoPDF(FPDF):
         self.set_text_color(128, 128, 128)
         self.cell(0, 10, f'Documento generado por IA - SolarDan - Página {self.page_no()}', 0, 0, 'C')
 
-# --- CONEXIÓN IA ---
+# --- CONEXIÓN IA (CONFIGURACIÓN CORREGIDA) ---
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # AQUI ESTABA EL ERROR: Forzamos la versión 2.5 que sí tienes disponible
+    model = genai.GenerativeModel('gemini-2.5-flash')
 except:
-    st.error("⚠️ Error: Falta API Key.")
+    st.error("⚠️ Error crítico: Revisa la API Key o la disponibilidad del modelo en Google AI Studio.")
     st.stop()
 
 # ==========================================
@@ -102,7 +103,7 @@ with st.sidebar:
         form_nombre = st.text_input("Nombre Completo")
         form_direccion = st.text_input("Dirección")
         
-        # NUEVOS CAMPOS SOLICITADOS
+        # CAMPOS TÉCNICOS EXTRA
         form_potencia_actual = st.number_input("Potencia Contratada (kW)", min_value=1.0, value=4.6, step=0.1)
         form_orientacion_azotea = st.selectbox("Orientación de la azotea", 
                                                ["Sur (Ideal)", "Sureste", "Suroeste", "Este", "Oeste", "Norte"])
@@ -120,7 +121,7 @@ with st.sidebar:
                 potencia_total_w = num_paneles * POTENCIA_PANEL_450
                 potencia_total_kw = potencia_total_w / 1000
                 
-                # Análisis de sobredimensionamiento (Aviso en PDF)
+                # Análisis de sobredimensionamiento
                 aviso_sobredimension = ""
                 if potencia_total_kw > (form_potencia_actual * 1.5):
                     aviso_sobredimension = "NOTA: La capacidad de la cubierta es muy superior a su potencia contratada. Se recomienda ajustar la instalacion al consumo real."
@@ -157,6 +158,7 @@ with st.sidebar:
                     pdf.add_page()
                     
                     def clean_text(text):
+                        # Limpieza básica para evitar errores de caracteres raros
                         return text.encode('latin-1', 'replace').decode('latin-1')
 
                     # Datos Cliente
@@ -173,20 +175,20 @@ with st.sidebar:
                     pdf.set_font("helvetica", size=11)
                     pdf.ln(2)
                     
-                    # Bloque de Potencias (Nuevo)
+                    # Bloque de Potencias
                     pdf.cell(0, 7, f"   - Potencia Contratada Actual: {form_potencia_actual} kW", ln=True)
                     pdf.set_font("helvetica", 'B', 11)
                     pdf.cell(0, 7, f"   - Potencia Fotovoltaica Instalable: {potencia_total_kw:.2f} kWp", ln=True)
                     pdf.set_font("helvetica", size=11)
                     
                     if aviso_sobredimension:
-                        pdf.set_text_color(220, 50, 50) # Rojo para avisos
+                        pdf.set_text_color(220, 50, 50) # Rojo
                         pdf.set_font("helvetica", 'I', 9)
                         pdf.multi_cell(0, 5, f"     {clean_text(aviso_sobredimension)}")
-                        pdf.set_text_color(0, 0, 0) # Volver a negro
+                        pdf.set_text_color(0, 0, 0) # Negro
                         pdf.set_font("helvetica", size=11)
 
-                    # Bloque de Orientación (Nuevo)
+                    # Bloque de Orientación
                     pdf.ln(2)
                     pdf.cell(0, 7, f"   - Orientacion Cubierta Cliente: {clean_text(form_orientacion_azotea)}", ln=True)
                     pdf.cell(0, 7, f"   - Estrategia de Diseno: Estructuras orientadas al SUR MAGNETICO", ln=True)
@@ -315,6 +317,7 @@ if prompt := st.chat_input("Escribe tu consulta..."):
     try:
         with st.spinner("SolarDan IA pensando..."):
             if uploaded_file:
+                # Interacción única para imágenes
                 response = model.generate_content(content_to_send)
             else:
                 text_history = []
